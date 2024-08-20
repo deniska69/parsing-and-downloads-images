@@ -1,0 +1,22 @@
+{
+  "name": "parsing-and-downloads-images",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "download": "node download.js",
+    "dev": "nodemon index.js"
+  },
+  "repository": "https://github.com/deniska69/parsing-and-downloads-images.git",
+  "author": "deniska69 <gostev.dy@yandex.ru>",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.4",
+    "cheerio": "^1.0.0",
+    "colors": "^1.4.0",
+    "fs": "^0.0.1-security",
+    "nodemon": "^3.1.4"
+  }
+}
