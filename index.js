@@ -1,113 +1,68 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import * as fs from "fs";
+import * as colors from "colors"; // Not delete - required for work colors log
 import { URLS_LIST } from "./URLS_LIST.js";
+import { sleep, createDir, logSuccess, logError, clearLog, DIRECTORY_OUTPUT, writeJSON } from "./helpers.js";
 
-const DIRECTORY_OUTPUT = "output";
+const parseProducts = async ({ url, title }) => {
+  logSuccess("[Parse products]: ", `\'${title}\' ${url}`);
 
-const parse = () => {
-  process.stdout.write("\x1Bc");
+  let resultParsing = [];
 
-  for (const url in URLS_LIST) {
-    axios
-      .get(URLS_LIST[url]?.url, { responseType: "arraybuffer" })
-      .then((html) => {
-        const $ = cheerio.load(html.data);
+  await axios
+    .get(url)
+    .then(({ data }) => {
+      const $ = cheerio.load(data);
 
-        const titleFile = URLS_LIST[url]?.title;
+      $("#stock > div.catalogue-section")
+        .children()
+        .each((indexCategory, category) => {
+          const name = category?.attributes[0]?.name;
+          const value = category?.attributes[0]?.value;
 
-        console.log("[FILE]:", titleFile);
+          if (name === "class" && value === "inner") {
+            const categoryTitle = $(category).text().trim();
+            resultParsing.push({ title: categoryTitle, series: title });
 
-        let result = [];
+            logSuccess("\n[New catogory]:", categoryTitle);
+          } else if (name === "class" && value === "catalogue-list") {
+            let products = [];
 
-        $("#stock > div.catalogue-section")
-          .children()
-          .each((indexCategory, list) => {
-            const attributesCategory = list?.attributes[0];
+            $(category)
+              .children()
+              .children()
+              .each((indexProduct, product) => {
+                const name = product?.attributes[1]?.name;
+                const id = product?.attributes[1]?.value;
 
-            if (
-              attributesCategory?.name === "class" &&
-              attributesCategory?.value === "inner"
-            ) {
-              const categoryTitle = $(list).text().trim();
-              result.push({ title: categoryTitle });
-            }
+                if (name === "data-product_id") {
+                  const urlProduct = $(product).find("a").attr()?.href.trim();
+                  products.push({ id, url: `https://expro-mebel.ru${urlProduct}` });
 
-            if (
-              attributesCategory?.name === "class" &&
-              attributesCategory?.value === "catalogue-list"
-            ) {
-              let idsProducts = [];
+                  console.log(`[Product]: ${id}`, `${urlProduct.substring(0, 39)}...`.yellow);
+                }
+              });
 
-              $(list)
-                .children()
-                .children()
-                .each((indexProduct, product) => {
-                  const attributesProduct = product?.attributes[1];
-
-                  if (attributesProduct?.name === "data-product_id") {
-                    idsProducts.push(attributesProduct?.value);
-                  }
-                });
-
-              result[result?.length - 1].series = URLS_LIST[url]?.title;
-              result[result?.length - 1].ids = idsProducts;
-            }
-          });
-
-        result.forEach((item, indexCategory) => {
-          createDir(URLS_LIST[url]?.title, item?.title);
+            resultParsing[resultParsing?.length - 1].products = products;
+          }
         });
+    })
+    .catch((error) => logError(`[Parse products]: axios: \'${error}\'.`))
+    .finally(() => {
+      logSuccess("[Parse products]:", `\'${title}\' was successfully ended.`);
+      writeJSON(title, resultParsing);
+      logSuccess("[END]\n");
+    });
+};
 
-        writeJSON(URLS_LIST[url]?.title, result);
-      });
+const parseSeries = async () => {
+  clearLog();
+  logSuccess("\n\n[START]");
+
+  for (const index in URLS_LIST) {
+    await parseProducts(URLS_LIST[index]);
   }
 };
 
-const createDir = async (title, name) => {
-  if (!fs.existsSync(DIRECTORY_OUTPUT)) {
-    fs.mkdirSync(DIRECTORY_OUTPUT);
-  }
-
-  if (!fs.existsSync(`${DIRECTORY_OUTPUT}/${title}`)) {
-    fs.mkdirSync(`${DIRECTORY_OUTPUT}/${title}`);
-  }
-
-  if (!fs.existsSync(`${DIRECTORY_OUTPUT}/${title}/${name}`)) {
-    fs.mkdirSync(`${DIRECTORY_OUTPUT}/${title}/${name}`);
-  }
-};
-
-const writeJSON = async (title, json) => {
-  if (!fs.existsSync(DIRECTORY_OUTPUT)) {
-    fs.mkdirSync(DIRECTORY_OUTPUT);
-  }
-
-  if (!fs.existsSync(`${DIRECTORY_OUTPUT}/${title}`)) {
-    fs.mkdirSync(`${DIRECTORY_OUTPUT}/${title}`);
-  }
-
-  fs.writeFile(
-    `${DIRECTORY_OUTPUT}/${title}/${title}.json`,
-    JSON.stringify(json),
-    function (error) {
-      if (error) {
-        return console.log(error);
-      }
-      console.log(
-        "\x1b[32m%s\x1b[0m",
-        `The file \'${DIRECTORY_OUTPUT}/${title}/${title}.json\' was successfully written`
-      );
-    }
-  );
-};
-
-parse();
-
-export default {
-  tabWidth: 3,
-  useTabs: true,
-  singleQuote: true,
-  importOrder: ["^[./]"],
-  importOrderSeparation: true,
-};
+parseSeries();

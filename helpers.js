@@ -27,20 +27,26 @@ const sleep = (milliseconds = 1000) => {
   } while (currentDate - date < milliseconds);
 };
 
-const createDir = (dirFirst, dirSecond) => {
+const createDir = (dirFirst = null, dirSecond = null) => {
   if (!fs.existsSync(DIRECTORY_OUTPUT)) {
     fs.mkdirSync(DIRECTORY_OUTPUT);
   }
 
-  if (!fs.existsSync(`${DIRECTORY_OUTPUT}/${dirFirst}`)) {
-    fs.mkdirSync(`${DIRECTORY_OUTPUT}/${dirFirst}`);
+  const pathFirst = `${DIRECTORY_OUTPUT}/${dirFirst}`;
+
+  if (dirFirst && !fs.existsSync(pathFirst)) {
+    fs.mkdirSync(pathFirst);
   }
 
-  const finalPath = `${DIRECTORY_OUTPUT}/${dirFirst}/${dirSecond}`;
+  if (!dirSecond) {
+    return logSuccess(`Directory \'${pathFirst}\' was successfully`, "create.");
+  }
 
-  if (!fs.existsSync(finalPath)) {
-    fs.mkdirSync(finalPath);
-    logSuccess(`Directory \'${finalPath}\' was successfully`, "create.");
+  const pathSecond = pathFirst + `/${dirSecond}`;
+
+  if (!fs.existsSync(pathSecond)) {
+    fs.mkdirSync(pathSecond);
+    logSuccess(`Directory \'${pathSecond}\' was successfully`, "create.");
   }
 };
 
@@ -66,12 +72,4 @@ const writeJSON = async (title, json) => {
   });
 };
 
-export {
-  sleep,
-  createDir,
-  logSuccess,
-  logError,
-  clearLog,
-  DIRECTORY_OUTPUT,
-  writeJSON,
-};
+export { sleep, createDir, logSuccess, logError, clearLog, DIRECTORY_OUTPUT, writeJSON };

@@ -2,15 +2,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import * as fs from "fs";
 import { URLS_LIST } from "./URLS_LIST.js";
-import {
-  sleep,
-  createDir,
-  logSuccess,
-  logError,
-  clearLog,
-  DIRECTORY_OUTPUT,
-  writeJSON,
-} from "./helpers.js";
+import { sleep, createDir, logSuccess, logError, clearLog, DIRECTORY_OUTPUT, writeJSON } from "./helpers.js";
 
 const getUrl = (id) => `https://expro-mebel.ru/catalog/product/${id}/0/`;
 
@@ -22,16 +14,14 @@ const getImages = async (urlProduct) => {
     .then((html) => {
       const $ = cheerio.load(html.data);
 
-      const selector =
-        ".inner.product-column-holder > div:nth-child(1) > div.product-tabs-list > div > div";
+      const selector = ".inner.product-column-holder > div:nth-child(1) > div.product-tabs-list > div > div";
 
       let images = [];
 
       $(selector)
         .children()
         .each((index, item) => {
-          const uriImage =
-            "https://expro-mebel.ru/" + $(item).find("img").attr()?.src;
+          const uriImage = "https://expro-mebel.ru/" + $(item).find("img").attr()?.src;
 
           // logSuccess(`[${productId}]:`, uriImage);
           logSuccess(`[image]:`, uriImage);
